@@ -19,10 +19,10 @@ class MyButton;
 /*
  * 用来保存按钮的数组
  */
-typedef struct ButtonStruct {
+struct ButtonStruct {
     MyButton *subBtns[SUB_LENGTH];
     MyButton *btn;
-} ButtonStruct;
+};
 
 //菜单布局的界面
 class MenuLayout : public QWidget
@@ -48,14 +48,14 @@ private :
 
     void clearSubMenu(int i);
 
-private slots :
+public slots :
     void addBtn_slot();
     //选中按钮的槽函数
     void select_menu_slot(int i, int j);
 
 private:
     Ui::MenuLayout *ui;
-    ButtonStruct   buttons[LENGTH];
+    ButtonStruct   buttons[LENGTH];             //数组指针
     QPushButton    *addBtn;              //菜单数据
     Widget         *widget;              //容器界面的引用
     QWidget        *subMenuPanel;        //用来显示子菜单按钮的面板

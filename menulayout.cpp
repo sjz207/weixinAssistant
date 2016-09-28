@@ -6,6 +6,8 @@
 #include "mybutton.h"
 #include "menucontent.h"
 #include <QMessageBox>
+#include "util.h"
+
 
 MenuLayout::MenuLayout(QWidget *parent) :
     QWidget(parent),
@@ -21,28 +23,15 @@ MenuLayout::MenuLayout(QWidget *parent) :
     generateMenu();
 }
 
+//从文件当中加载菜单数据
 void MenuLayout::init()
 {
-    //给buttons初始化
-    for(int i = 0; i < LENGTH; i++)
-    {
-        buttons[i].btn = NULL;
-        for(int j = 0; j < SUB_LENGTH; j++)
-        {
-            buttons[i].subBtns[j] = NULL;
-        }
-    }
-    buttons[0].btn = new MyButton("菜单一", 0, 0);
-    buttons[1].btn = new MyButton("菜单一", 1, 0);
-    buttons[0].subBtns[0] = new MyButton("子菜单一一", 0, 1);
-    buttons[1].subBtns[0] = new MyButton("子菜单二一", 1, 1);
-    //连接信号和槽
-    connect(buttons[0].btn, SIGNAL(myCoord(int,int)), this, SLOT(select_menu_slot(int,int)));
-    connect(buttons[1].btn, SIGNAL(myCoord(int,int)), this, SLOT(select_menu_slot(int,int)));
+    //从文件加载数据
+    Util::getInstance()->getMenu(buttons, this);
 }
 
 /*
- * 清楚界面上面的所有组件
+ * 清除界面上面的所有组件
  */
 void MenuLayout::clear()
 {
@@ -96,22 +85,29 @@ void MenuLayout::generateMenu()
 }
 
 /*
- * 清楚所有子菜单
+ * 清除ui->subWidget里面的子菜单界面
  */
 void MenuLayout::clearSubMenu(int i)
 {
     QVBoxLayout *layout = static_cast<QVBoxLayout *>(ui->subWidget->layout());
-qDebug() << "layout:" << layout;
-    if( !layout )
+    qDebug() << "clear layout:" << layout;
+    //判断layout是否可用，i是否合理，否则使用buttons将会发生数组越界
+    if( !layout || i < 0 || i > 2)
     {
         return;
     }
     for(int j = 0; j < SUB_LENGTH; j++)
     {
+qDebug() << "buttons[i]:" << (buttons + i);
+qDebug() << "clear buttons[" << i << "].subBtns:" << buttons[i].subBtns[j];
         layout->removeWidget(buttons[i].subBtns[j]);
         delete buttons[i].subBtns[j];
         buttons[i].subBtns[j] = NULL;
     }
+    //删除addSubBtn
+    layout->removeWidget(addSubBtn);
+    delete addSubBtn;
+    addSubBtn = NULL;
 }
 
 /*
@@ -140,6 +136,7 @@ qDebug() << "待删除的i:" << i;
             if( !addSubBtn )
             {
                 addSubBtn = new QPushButton("+");
+                //TODO 在此处给按钮连接信号和槽
             }
             tempLay->addWidget(addSubBtn);
             break;
@@ -175,29 +172,18 @@ void MenuLayout::addBtn_slot()
 void MenuLayout::select_menu_slot(int i, int j)
 {
 qDebug() << "select i:" << i;
-    //保存前面一个i坐标
+    //保存上一个选中的菜单的坐标
     oldI = widget->getMenuContent()->getCoordI();
-    switch( i )
+qDebug() << "oldI" << oldI;
+    //如果第一个子菜单为空，那么没有子菜单
+    if( !buttons[i].subBtns[0] )
     {
-    case 0:
-        //如果第一个子菜单是空，那么这个说明没有子菜单
-        if( buttons[i].subBtns[0] == NULL )
-        {
-            widget->getMenuContent()->hideContent();
-            widget->getMenuContent()->setCoord(i, 0);
-        } else
-        {
-            widget->getMenuContent()->setCoord(i, j);
-        }
-        generateSubMenu(i);
-        break;
-    case 1:
-        widget->getMenuContent()->setCoord(i, j);
-        generateSubMenu(i);
-        break;
-    case 2:
-        break;
+         widget->getMenuContent()->hideContent();
+         //TODO 只添加一个添加按钮在里面
     }
+    //TODO 添加里面的所有子菜单
+    generateSubMenu(i);
+    widget->getMenuContent()->setCoord(i, j);
 }
 
 void MenuLayout::setWidgetQuote(Widget *widget)
@@ -224,6 +210,7 @@ qDebug() << "delete menu i:" << i << "j:" << j;
         //删除按钮之后将所有按钮往前移动
         for(int x = i; x  < LENGTH - 1; x ++)
         {
+qDebug() << "移动开始";
             buttons[x].btn = buttons[x + 1].btn;
             if( buttons[x].btn != NULL)
                 buttons[x].btn->setCoord(x, 0);
@@ -235,18 +222,11 @@ qDebug() << "delete menu i:" << i << "j:" << j;
                     buttons[x].subBtns[y]->setCoord(x, y);
             }
         }
-        if( buttons[LENGTH - 1].btn != NULL)
+        //TODO 移动之后的地方赋值为空
+        buttons[LENGTH - 1].btn = NULL;
+        for( int y = 0; y < SUB_LENGTH; y++)
         {
-           // delete buttons[LENGTH - 1].btn;
-            buttons[LENGTH - 1].btn = NULL;
-            for( int y = 0; y < SUB_LENGTH; y++)
-            {
-                if(buttons[LENGTH - 1].subBtns[y] != NULL)
-                {
-                  //  delete buttons[LENGTH - 1].subBtns[y];
-                    buttons[LENGTH - 1].subBtns[y] = NULL;
-                }
-            }
+            buttons[LENGTH - 1].subBtns[y] = NULL;
         }
     }
     //重新生成菜单

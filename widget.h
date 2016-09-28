@@ -25,8 +25,8 @@ public:
     MenuLayout *getMenuLayout();
 
 private:
-    Ui::Widget *ui;
-    MenuLayout *menuLayout;
+    Ui::Widget  *ui;
+    MenuLayout  *menuLayout;
     MenuContent *menuContent;
 };
 

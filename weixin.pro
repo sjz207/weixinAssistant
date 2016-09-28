@@ -16,12 +16,14 @@ SOURCES += main.cpp\
         widget.cpp \
     menucontent.cpp \
     menulayout.cpp \
-    mybutton.cpp
+    mybutton.cpp \
+    util.cpp
 
 HEADERS  += widget.h \
     menucontent.h \
     menulayout.h \
-    mybutton.h
+    mybutton.h \
+    util.h
 
 FORMS    += widget.ui \
     menucontent.ui \
