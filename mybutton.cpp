@@ -40,9 +40,19 @@ void MyButton::setName(const QString &name)
     this->name = name;
 }
 
+QString MyButton::getName()
+{
+    return this->name;
+}
+
 void MyButton::setType(const QString &type)
 {
     this->type = type;
+}
+
+QString MyButton::getType()
+{
+    return this->type;
 }
 
 void MyButton::setKey(int key)
@@ -50,8 +60,17 @@ void MyButton::setKey(int key)
     this->key = key;
 }
 
+int MyButton::getKey()
+{
+    return this->key;
+}
+
 void MyButton::setUrl(const QString &url)
 {
     this->url = url;
 }
 
+QString MyButton::getUrl()
+{
+    return this->url;
+}

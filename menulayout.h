@@ -37,6 +37,8 @@ public:
 
     void deleteMenu(int, int);
 
+    void writeMenuToFile();
+
 private :
     void init();
 

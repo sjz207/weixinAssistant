@@ -25,6 +25,7 @@ void MenuContent::init()
     connect(ui->clickRBtn, SIGNAL(clicked()), this, SLOT(on_btnGroup_slot()));
     connect(ui->viewRBtn, SIGNAL(clicked()), this, SLOT(on_btnGroup_slot()));
     connect(ui->deleteMenuBtn, SIGNAL(clicked()), this, SLOT(on_deleteBtn_slot()));
+    connect(ui->sureBtn, SIGNAL(clicked()), this, SLOT(sureBtn_slot()));
     ui->deleteMenuBtn->setStyleSheet("color:blue");
     ui->topWidget->setStyleSheet("QWidget#topWidget {\
                                  border-bottom : 1px solid #00FFFF;}");
@@ -42,6 +43,11 @@ void MenuContent::on_btnGroup_slot()
         ui->switchMenuPage->setCurrentIndex(1);
         break;
     }
+}
+
+void MenuContent::sureBtn_slot()
+{
+    widget->getMenuLayout()->writeMenuToFile();
 }
 
 int MenuContent::getCoordI()
@@ -82,8 +88,6 @@ void MenuContent::setCoord(int i, int j)
 
 void MenuContent::on_deleteBtn_slot()
 {
-qDebug() << "delete_slot!";
-qDebug() << "on_deleteBtn_slot i:" << i << "j:" << j;
     //如果有坐标，那么执行删除操作
     if( i != NO_COORD && j != NO_COORD)
     {
@@ -94,7 +98,6 @@ qDebug() << "on_deleteBtn_slot i:" << i << "j:" << j;
     } else {
         QMessageBox::warning(NULL, QString("警告"), QString("没有选中任何菜单!"));
     }
-    qDebug() << "i:" << i << "j:" << j;
 }
 
 MenuContent::~MenuContent()

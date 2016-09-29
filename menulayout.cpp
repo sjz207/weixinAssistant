@@ -90,7 +90,6 @@ void MenuLayout::generateMenu()
 void MenuLayout::clearSubMenu(int i)
 {
     QVBoxLayout *layout = static_cast<QVBoxLayout *>(ui->subWidget->layout());
-    qDebug() << "clear layout:" << layout;
     //判断layout是否可用，i是否合理，否则使用buttons将会发生数组越界
     if( !layout || i < 0 || i > 2)
     {
@@ -98,8 +97,6 @@ void MenuLayout::clearSubMenu(int i)
     }
     for(int j = 0; j < SUB_LENGTH; j++)
     {
-qDebug() << "buttons[i]:" << (buttons + i);
-qDebug() << "clear buttons[" << i << "].subBtns:" << buttons[i].subBtns[j];
         layout->removeWidget(buttons[i].subBtns[j]);
         delete buttons[i].subBtns[j];
         buttons[i].subBtns[j] = NULL;
@@ -115,9 +112,9 @@ qDebug() << "clear buttons[" << i << "].subBtns:" << buttons[i].subBtns[j];
  */
 void MenuLayout::generateSubMenu(int i)
 {
-qDebug() << "待删除的i:" << i;
     //清除SubMenuPanel
     clearSubMenu(oldI);
+    Util::getInstance()->refreshMenu(i, buttons);
     int j = 0;
     QLayout *layout = ui->subWidget->layout();
     if( !layout )
@@ -145,7 +142,12 @@ qDebug() << "待删除的i:" << i;
         }
 
     }
-
+    //如果第一个子菜单为空，那么没有子菜单
+    if( !buttons[i].subBtns[0] )
+    {
+qDebug() << "buttons[i].subBtn[0]:" << buttons[i].subBtns[1];
+         widget->getMenuContent()->hideContent();
+    }
 
 }
 
@@ -171,18 +173,15 @@ void MenuLayout::addBtn_slot()
 //选中按钮的槽函数
 void MenuLayout::select_menu_slot(int i, int j)
 {
-qDebug() << "select i:" << i;
     //保存上一个选中的菜单的坐标
     oldI = widget->getMenuContent()->getCoordI();
-qDebug() << "oldI" << oldI;
-    //如果第一个子菜单为空，那么没有子菜单
-    if( !buttons[i].subBtns[0] )
+    widget->getMenuContent()->showContent();
+    //如果选中的为最底部按钮
+    if( !j )
     {
-         widget->getMenuContent()->hideContent();
-         //TODO 只添加一个添加按钮在里面
+        //TODO 添加里面的所有子菜单
+        generateSubMenu(i);
     }
-    //TODO 添加里面的所有子菜单
-    generateSubMenu(i);
     widget->getMenuContent()->setCoord(i, j);
 }
 
@@ -193,7 +192,6 @@ void MenuLayout::setWidgetQuote(Widget *widget)
 
 void MenuLayout::deleteMenu(int i, int j)
 {
-qDebug() << "delete menu i:" << i << "j:" << j;
     if( j != 0)
     {
         delete buttons[i].subBtns[j];
@@ -203,6 +201,7 @@ qDebug() << "delete menu i:" << i << "j:" << j;
         if( buttons[i].subBtns[0] != NULL)
         {
             QMessageBox::warning(NULL, QString("警告"), QString("不能删除有子菜单的菜单!"));
+            clearSubMenu(i);
             return;
         }
         delete buttons[i].btn;
@@ -210,7 +209,6 @@ qDebug() << "delete menu i:" << i << "j:" << j;
         //删除按钮之后将所有按钮往前移动
         for(int x = i; x  < LENGTH - 1; x ++)
         {
-qDebug() << "移动开始";
             buttons[x].btn = buttons[x + 1].btn;
             if( buttons[x].btn != NULL)
                 buttons[x].btn->setCoord(x, 0);
@@ -231,6 +229,14 @@ qDebug() << "移动开始";
     }
     //重新生成菜单
     generateMenu();
+}
+
+/*
+ * 生成菜单到文件
+ */
+void MenuLayout::writeMenuToFile()
+{
+    //Util::getInstance()->writeDataToFile(buttons);
 }
 
 MenuLayout::~MenuLayout()

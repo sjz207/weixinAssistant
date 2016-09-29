@@ -21,11 +21,19 @@ public:
 
     void setName(const QString &name);
 
+    QString getName();
+
     void setType(const QString &type);
+
+    QString getType();
 
     void setKey(int key);
 
+    int getKey();
+
     void setUrl(const QString &url);
+
+    QString getUrl();
 
 signals:
 

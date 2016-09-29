@@ -43,6 +43,8 @@ public slots:
     void on_btnGroup_slot();
     void on_deleteBtn_slot();
 
+    void sureBtn_slot();
+
 private:
     Ui::MenuContent *ui;
     QButtonGroup    *rBtnGroup;
