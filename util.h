@@ -16,15 +16,27 @@ class Util : public QObject
 public:
     static Util *getInstance();
 
-    ButtonStruct *getMenuDataFromFile();
+    ButtonStruct *getMenuDataFromFile(MenuLayout *);
 
     void getMenu(ButtonStruct *b, MenuLayout *menuLayout);
 
-    void refreshMenu(int i, ButtonStruct *b);
+    void refreshMenu(int i, ButtonStruct *b, MenuLayout *);
 
-    MyButton *getButtonFromJson(QJsonObject &);
+    MyButton *getButtonFromJson(QJsonObject &, MenuLayout *);
 
     void writeDataToFile(ButtonStruct *b);
+
+    void modifyData(int, int, ButtonStruct *);
+
+    void deleteData(int, int, ButtonStruct *);
+
+    void addData(int, int, ButtonStruct *);
+
+    void refreshData();
+
+    void switchComplexButton(int, int, ButtonStruct *);
+
+    QJsonObject createObject(MyButton *);
 
     ~Util();
 

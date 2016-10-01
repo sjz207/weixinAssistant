@@ -7,6 +7,7 @@
 #include "menucontent.h"
 #include <QMessageBox>
 #include "util.h"
+#include "addsubbutton.h"
 
 
 MenuLayout::MenuLayout(QWidget *parent) :
@@ -77,7 +78,6 @@ void MenuLayout::generateMenu()
             break;
         } else {
             layout->addWidget(buttons[i].btn);
-
         }
 
     }
@@ -98,8 +98,11 @@ void MenuLayout::clearSubMenu(int i)
     for(int j = 0; j < SUB_LENGTH; j++)
     {
         layout->removeWidget(buttons[i].subBtns[j]);
-        delete buttons[i].subBtns[j];
-        buttons[i].subBtns[j] = NULL;
+        if( buttons[i].subBtns[j] )
+        {
+            delete buttons[i].subBtns[j];
+            buttons[i].subBtns[j] = NULL;
+        }
     }
     //删除addSubBtn
     layout->removeWidget(addSubBtn);
@@ -108,13 +111,13 @@ void MenuLayout::clearSubMenu(int i)
 }
 
 /*
- * 根据选中的基层按钮生成子按钮
+ * 根据选中的底部按钮生成子按钮
  */
 void MenuLayout::generateSubMenu(int i)
 {
     //清除SubMenuPanel
     clearSubMenu(oldI);
-    Util::getInstance()->refreshMenu(i, buttons);
+    Util::getInstance()->refreshMenu(i, buttons, this);
     int j = 0;
     QLayout *layout = ui->subWidget->layout();
     if( !layout )
@@ -132,8 +135,9 @@ void MenuLayout::generateSubMenu(int i)
         {
             if( !addSubBtn )
             {
-                addSubBtn = new QPushButton("+");
+                addSubBtn = new AddSubButton(QString("+"), i);
                 //TODO 在此处给按钮连接信号和槽
+                connect(addSubBtn, SIGNAL(coordI(int)), this, SLOT(onAddSubBtn_slot(int)));
             }
             tempLay->addWidget(addSubBtn);
             break;
@@ -145,10 +149,59 @@ void MenuLayout::generateSubMenu(int i)
     //如果第一个子菜单为空，那么没有子菜单
     if( !buttons[i].subBtns[0] )
     {
-qDebug() << "buttons[i].subBtn[0]:" << buttons[i].subBtns[1];
-         widget->getMenuContent()->hideContent();
+//qDebug() << "第一个子菜单";
+        buttons[i].btn->setComplex(false);
+//        widget->getMenuContent()->hideContent();
     }
 
+    if( buttons[i].btn && buttons[i].btn->isComplex())
+    {
+        widget->getMenuContent()->hideContent();
+    }
+
+}
+
+/*
+ * 子按钮的信号和槽
+ */
+void MenuLayout::onAddSubBtn_slot(int i)
+{
+qDebug() << "子按钮信号和槽添加....";
+    //TODO 先更改底部菜单的信息,添加子菜单到菜单数据
+    int j = 0;
+    for(; j < SUB_LENGTH; j++)
+    {
+        if( !buttons[i].subBtns[j])
+            break;
+    }
+    //第一次添加按钮
+    if( !buttons[i].btn->isComplex() )
+    {
+        buttons[i].btn->setComplex(true);
+        MyButton *btn = new MyButton;
+        btn->setName("子菜单");
+        btn->setType("click");
+        btn->setKey(99);
+        buttons[i].subBtns[0] = btn;
+        btn->setText("子菜单");
+        Util::getInstance()->switchComplexButton(i, 0, buttons);
+        //生成子菜单
+        generateSubMenu(i);
+    } else
+    {
+        if( !buttons[i].subBtns[j] )
+        {
+            buttons[i].subBtns[j] = new MyButton;
+        }
+        MyButton *btn = buttons[i].subBtns[j];
+        btn->setName("子菜单");
+        btn->setType("click");
+        btn->setKey(99);
+        btn->setText("子菜单");
+//        widget->getMenuContent()->fillDataToButton(buttons[i].subBtns[j]);
+        Util::getInstance()->addData(i, j, buttons);
+        generateSubMenu(i);
+    }
 }
 
 //添加按钮的槽函数
@@ -165,6 +218,7 @@ void MenuLayout::addBtn_slot()
         return;
     }
     buttons[i].btn = new MyButton(QString("菜单%1").arg(i + 1), i, 0);
+    Util::getInstance()->addData(i, 0, buttons);
     //连接信号和槽
     connect(buttons[i].btn, SIGNAL(myCoord(int,int)), this, SLOT(select_menu_slot(int,int)));
     generateMenu();
@@ -181,6 +235,10 @@ void MenuLayout::select_menu_slot(int i, int j)
     {
         //TODO 添加里面的所有子菜单
         generateSubMenu(i);
+        widget->getMenuContent()->refreshData(buttons[i].btn);
+    } else
+    {
+        widget->getMenuContent()->refreshData(buttons[i].subBtns[j-1]);
     }
     widget->getMenuContent()->setCoord(i, j);
 }
@@ -194,8 +252,8 @@ void MenuLayout::deleteMenu(int i, int j)
 {
     if( j != 0)
     {
-        delete buttons[i].subBtns[j];
-        buttons[i].subBtns[j] = NULL;
+        Util::getInstance()->deleteData(i, j, buttons);
+        generateSubMenu(i);
     } else
     {
         if( buttons[i].subBtns[0] != NULL)
@@ -204,6 +262,7 @@ void MenuLayout::deleteMenu(int i, int j)
             clearSubMenu(i);
             return;
         }
+        Util::getInstance()->deleteData(i, j, buttons);
         delete buttons[i].btn;
         buttons[i].btn = NULL;
         //删除按钮之后将所有按钮往前移动
@@ -226,9 +285,10 @@ void MenuLayout::deleteMenu(int i, int j)
         {
             buttons[LENGTH - 1].subBtns[y] = NULL;
         }
+        //重新生成菜单
+        generateMenu();
     }
-    //重新生成菜单
-    generateMenu();
+
 }
 
 /*
@@ -236,7 +296,20 @@ void MenuLayout::deleteMenu(int i, int j)
  */
 void MenuLayout::writeMenuToFile()
 {
-    //Util::getInstance()->writeDataToFile(buttons);
+    //TODO 验证i和j是否有效，有效则调用方法
+    int i = widget->getMenuContent()->getCoordI();
+    int j = widget->getMenuContent()->getCoordJ();
+    if( !j )
+    {
+        //TODO 底部按钮
+        widget->getMenuContent()->fillDataToButton(buttons[i].btn);
+        buttons[i].btn->setText(buttons[i].btn->getName());
+    } else
+    {
+        widget->getMenuContent()->fillDataToButton(buttons[i].subBtns[j - 1]);
+        buttons[i].subBtns[j - 1]->setText(buttons[i].subBtns[j -1]->getName());
+    }
+    Util::getInstance()->modifyData(i, j, buttons);
 }
 
 MenuLayout::~MenuLayout()

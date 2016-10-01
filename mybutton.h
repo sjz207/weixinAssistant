@@ -35,6 +35,10 @@ public:
 
     QString getUrl();
 
+    bool isComplex();
+
+    void setComplex(bool c);
+
 signals:
 
     void myCoord(int, int);
@@ -51,7 +55,7 @@ private:
     QString type;
     int key;
     QString url;
-
+    bool complex;
 };
 
 #endif // MYBUTTON_H

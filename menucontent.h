@@ -11,6 +11,7 @@ class MenuContent;
 }
 
 class QButtonGroup;
+class MyButton;
 
 //显示菜单内容的界面
 class MenuContent : public QWidget
@@ -33,8 +34,13 @@ public:
 
     void setCoord(int, int);
 
+    void fillDataToButton(MyButton *);
+
     int getCoordI();
 
+    int getCoordJ();
+
+    void refreshData(MyButton *);
 
 signals:
     void deleteMenu(int menuId);

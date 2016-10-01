@@ -14,6 +14,7 @@ class MenuLayout;
 
 class QPushButton;
 class MyButton;
+class AddSubButton;
 
 
 /*
@@ -55,13 +56,15 @@ public slots :
     //选中按钮的槽函数
     void select_menu_slot(int i, int j);
 
+    void onAddSubBtn_slot(int);
+
 private:
     Ui::MenuLayout *ui;
     ButtonStruct   buttons[LENGTH];             //数组指针
     QPushButton    *addBtn;              //菜单数据
     Widget         *widget;              //容器界面的引用
     QWidget        *subMenuPanel;        //用来显示子菜单按钮的面板
-    QPushButton    *addSubBtn;
+    AddSubButton   *addSubBtn;
     int            oldI;                 //更改之前的i坐标
 
 };

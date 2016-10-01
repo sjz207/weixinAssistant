@@ -1,10 +1,14 @@
 #include "mybutton.h"
+#include <QDebug>
 
 MyButton::MyButton(QWidget *parent) :
     QPushButton(parent)
 {
     i = 0;
     j = 0;
+    complex = false;
+    this->key = NO_KEY;
+    connect(this, SIGNAL(clicked()), this, SLOT(on_click_slot()));
 }
 
 MyButton::MyButton(const QString &text, QWidget *parent) :
@@ -12,6 +16,9 @@ MyButton::MyButton(const QString &text, QWidget *parent) :
 {
     i = 0;
     j = 0;
+    complex = false;
+    this->key = NO_KEY;
+    connect(this, SIGNAL(clicked()), this, SLOT(on_click_slot()));
 }
 
 MyButton::MyButton(const QString &text,int i, int j, QWidget *parent) :
@@ -19,13 +26,28 @@ MyButton::MyButton(const QString &text,int i, int j, QWidget *parent) :
 {
     this->i = i;
     this->j = j;
+    complex = false;
     this->key = NO_KEY;
     connect(this, SIGNAL(clicked()), this, SLOT(on_click_slot()));
 }
 
+/*
+ * 判断是不是带有子类按钮的底部按钮
+ */
+bool MyButton::isComplex()
+{
+    return this->complex;
+}
+
+void MyButton::setComplex(bool c)
+{
+//qDebug() << "c :" << c;
+    this->complex = c;
+}
 
 void MyButton::on_click_slot()
 {
+    //发射自定义信号
     emit myCoord(i, j);
 }
 

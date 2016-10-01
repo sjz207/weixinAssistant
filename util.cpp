@@ -26,7 +26,7 @@ Util *Util::getInstance()
     return instance;
 }
 
-ButtonStruct *Util::getMenuDataFromFile()
+ButtonStruct *Util::getMenuDataFromFile(MenuLayout *layout)
 {
     QFile file("data.json");
     if( !file.open(QIODevice::ReadOnly | QIODevice::Truncate))
@@ -36,11 +36,9 @@ ButtonStruct *Util::getMenuDataFromFile()
         return NULL;
     }
     QByteArray contents = file.readAll();
-//qDebug() << "content:" << contents;
     //开始解析json文件
     QJsonParseError json_error;
     QJsonDocument parse_document = QJsonDocument::fromJson(contents, &json_error);
-//    ButtonStruct buttons[LENGTH];
     //数组置零
     for(int i = 0; i < LENGTH; i++)
     {
@@ -50,7 +48,6 @@ ButtonStruct *Util::getMenuDataFromFile()
             buttons[i].subBtns[j] = NULL;
         }
     }
-
     //如果解析没有出错
     if( json_error.error  == QJsonParseError::NoError)
     {
@@ -60,7 +57,7 @@ ButtonStruct *Util::getMenuDataFromFile()
             if( obj.contains("button"))
             {
                 QJsonArray root = obj.take("button").toArray();
-//qDebug() << "root:" << root;
+                //保存菜单数据
                 menuData = root;
                 int count = root.count();
                 for(int i = 0; i < count; i++)
@@ -80,40 +77,15 @@ ButtonStruct *Util::getMenuDataFromFile()
                     //如果包含子菜单
                     if( sObj.contains("sub_button"))
                     {
+                        //因为有子菜单
+                        buttons[i].btn->setComplex(true);
                         QJsonArray subBtn = sObj.take("sub_button").toArray();
                         int subCount = subBtn.count();
                         for(int j = 0; j < subCount; j++)
                         {
                             QJsonObject menuObj = subBtn.at(j).toObject();
-                            MyButton *mBtn = new MyButton;
-                            //设置坐标
+                            MyButton *mBtn = getButtonFromJson(menuObj, layout);
                             mBtn->setCoord(i, j+1);
-                            QString s_name, s_url, s_type;
-                            int s_key;
-                            if( menuObj.contains("name"))
-                            {
-                                s_name = menuObj.take("name").toString();
-                                mBtn->setName(s_name);
-                                mBtn->setText(s_name);
-                            }
-                            if( menuObj.contains("type"))
-                            {
-                                s_type = menuObj.take("type").toString();
-                                mBtn->setType(s_type);
-                            }
-                            if( menuObj.contains("url"))
-                            {
-                                s_url = menuObj.take("url").toString();
-                                mBtn->setUrl(s_url);
-                            }
-                            if( menuObj.contains("key"))
-                            {
-                                s_key = menuObj.take("key").toInt();
-                                mBtn->setKey(s_key);
-                            } else
-                            {
-                                mBtn->setKey(NO_KEY);
-                            }
                             buttons[i].subBtns[j] = mBtn;
                         }
                     } else
@@ -144,7 +116,6 @@ ButtonStruct *Util::getMenuDataFromFile()
         QMessageBox::warning(NULL, QString("警告"), QString("文件解析出错!"));
         return NULL;
     }
-//qDebug() << "menuData:" << menuData;
     return buttons;
 }
 
@@ -152,7 +123,7 @@ ButtonStruct *Util::getMenuDataFromFile()
 void Util::getMenu(ButtonStruct *b, MenuLayout *menuLayout)
 {
     //生成菜单数据
-    ButtonStruct *b1 = getMenuDataFromFile();
+    ButtonStruct *b1 = getMenuDataFromFile(menuLayout);
     //将生成的菜单数据复制到menuLayout里面的变量里面去
     if( !b1 )
     {
@@ -173,13 +144,13 @@ void Util::getMenu(ButtonStruct *b, MenuLayout *menuLayout)
 /*
  * 刷新按钮菜单
  */
-void Util::refreshMenu(int i, ButtonStruct *b)
+void Util::refreshMenu(int i, ButtonStruct *b, MenuLayout *layout)
 {
     QJsonValue value = menuData.at(i);
 
-    if( value.isNull() )
+    if( value.isUndefined() )
     {
-        QMessageBox::warning(NULL, QString("警告"), QString("刷新菜单失败!"));
+        //TODO 代表这个地步菜单是重新添加的
         return;
     }
     QJsonObject obj = value.toObject();
@@ -189,16 +160,15 @@ void Util::refreshMenu(int i, ButtonStruct *b)
         for(int j = 0; j < array.count(); j++)
         {
             QJsonObject s_obj = array.at(j).toObject();
-            MyButton *mBtn = getButtonFromJson(s_obj);
+            MyButton *mBtn = getButtonFromJson(s_obj, layout);
             mBtn->setCoord(i, j+1);
             b[i].subBtns[j] = mBtn;
-
         }
     }
 
 }
 
-MyButton *Util::getButtonFromJson(QJsonObject &obj)
+MyButton *Util::getButtonFromJson(QJsonObject &obj, MenuLayout *layout)
 {
     MyButton *mBtn = new MyButton;
     QString name, url, type;
@@ -221,12 +191,151 @@ MyButton *Util::getButtonFromJson(QJsonObject &obj)
     }
     if( obj.contains("key"))
     {
-        key = obj.take("key").toInt();
+        key = obj.take("key").toString().toInt();
         mBtn->setKey(key);
     } else {
         mBtn->setKey(NO_KEY);
     }
+    connect(mBtn, SIGNAL(myCoord(int,int)), layout, SLOT(select_menu_slot(int,int)));
     return mBtn;
+}
+
+/*
+ * 根据i和j修改menuData
+ * 保证这里面的i和j不能无效
+ */
+void Util::modifyData(int i, int j, ButtonStruct *b)
+{
+    QJsonObject obj = menuData.takeAt(i).toObject();
+    //如果是修改底部菜单按钮
+    if( !j )
+    {
+        //此时的底部按钮没有子按钮
+        if( !b[i].subBtns[0])
+        {
+            obj = createObject(b[i].btn);
+            menuData.insert(i, obj);
+        }
+    } else
+    {
+        if( obj.contains("sub_button"))
+        {
+             QJsonArray array = obj.take("sub_button").toArray();
+             array.removeAt(j - 1);
+             QJsonObject o = createObject(b[i].subBtns[j - 1]);
+             array.insert(j - 1, o);
+             obj.insert("sub_button", array);
+        }
+        menuData.insert(i, obj);
+    }
+    refreshData();
+}
+
+/*
+ * 将不包含子菜单的按钮转换为包含子菜单的按钮
+ */
+void Util::switchComplexButton(int i, int j, ButtonStruct *b)
+{
+qDebug() << "switch complex:" << buttons[i].btn->isComplex();
+    QJsonObject obj = menuData.takeAt(i).toObject();
+    QJsonObject newObj;
+    newObj.insert("name", b[i].btn->getName());
+    QJsonObject subObj = createObject(b[i].subBtns[0]);
+qDebug() << "b[i].subBtns[0]" << b[i].subBtns[j] << "j:" << j;
+    QJsonArray array;
+    array.append(subObj);
+    newObj.insert("sub_button", array);
+    menuData.insert(i, newObj);
+    refreshData();
+}
+
+/*
+ * 添加按钮
+ */
+void Util::addData(int i, int j, ButtonStruct *b)
+{
+    //底部按钮
+    if( !j )
+    {
+        QJsonObject obj = createObject(b[i].btn);
+        //添加
+        menuData.append(obj);
+    } else
+    {
+        QJsonObject obj = menuData.takeAt(i).toObject();
+        QJsonArray array = obj.take("sub_button").toArray();
+        QJsonObject o = createObject(b[i].subBtns[j - 1]);
+        array.append(o);
+        obj.insert("sub_button", array);
+        menuData.insert(i, obj);
+    }
+    refreshData();
+}
+
+void Util::refreshData()
+{
+    //将数据写入文件
+    QFile file("data.json");
+    if( !file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QMessageBox::warning(NULL, QString("提示"), QString("由于莫名其妙的BUG，更改菜单失败!"));
+        return;
+    }
+    //清楚文件内容
+    file.resize(0);
+    QTextStream in(&file);
+    //设置写入编码
+    in.setCodec("UTF-8");
+    QJsonObject obj;
+    obj.insert("button", menuData);
+    QJsonDocument document;
+    document.setObject(obj);
+    in << document.toJson(QJsonDocument::Compact);
+    file.close();
+}
+
+/*
+ * 删除menuData里面的数据
+ */
+void Util::deleteData(int i, int j, ButtonStruct *b)
+{
+    QJsonObject obj = menuData.takeAt(i).toObject();
+    //如果不是是底部的按钮
+    if( j )
+    {
+        if( obj.contains("sub_button"))
+        {
+            QJsonArray array = obj.take("sub_button").toArray();
+            array.removeAt(j - 1);
+            obj.insert("sub_button", array);
+        }
+        menuData.insert(i, obj);
+    }
+    refreshData();
+}
+
+/*
+ * 根据MyButton创建Object
+ */
+QJsonObject Util::createObject(MyButton *btn)
+{
+    QJsonObject obj;
+    QString name, url, type;
+    int key;
+    name = btn->getName();
+    url = btn->getUrl();
+    type = btn->getType();
+    key = btn->getKey();
+    obj.insert("name", name);
+    obj.insert("type", type);
+    if( key == NO_KEY)
+    {
+        obj.insert("url", url);
+    } else
+    {
+        obj.insert("key", QString::number(key));
+    }
+    return obj;
 }
 
 /*
@@ -249,7 +358,6 @@ void Util::writeDataToFile(ButtonStruct *b)
         if( !b[i].subBtns[0] )
         {
             insertObj(s_obj, b[i].btn);
-
         } else
         {
             //TODO 子菜单是一个数组
@@ -273,7 +381,7 @@ void Util::writeDataToFile(ButtonStruct *b)
     obj.insert("button", array);
     QJsonDocument document;
     document.setObject(obj);
-    QFile file("test.json");
+    QFile file("data.json");    //打开文件
     if( !file.open(QIODevice::ReadWrite | QIODevice::Text))
     {
         QMessageBox::warning(NULL, QString("警告"), QString("文件打开失败!"));
@@ -291,7 +399,7 @@ void Util::insertObj(QJsonObject &obj, MyButton *btn)
         obj.insert("url", btn->getUrl());
     } else
     {
-        obj.insert("key", btn->getKey());
+        obj.insert("key",QString::number(btn->getKey()));
     }
 }
 

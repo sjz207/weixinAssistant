@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>586</width>
-    <height>582</height>
+    <height>586</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -186,7 +186,7 @@
          <item>
           <widget class="QStackedWidget" name="switchMenuPage">
            <property name="currentIndex">
-            <number>0</number>
+            <number>1</number>
            </property>
            <widget class="QWidget" name="clickPage">
             <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -198,7 +198,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="lineEdit_2"/>
+              <widget class="QLineEdit" name="urlEdit"/>
              </item>
             </layout>
            </widget>
@@ -212,7 +212,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="lineEdit"/>
+              <widget class="QLineEdit" name="keyEdit"/>
              </item>
             </layout>
            </widget>
@@ -237,13 +237,6 @@
        <widget class="QPushButton" name="sureBtn">
         <property name="text">
          <string>确定</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="cancelBtn">
-        <property name="text">
-         <string>取消</string>
         </property>
        </widget>
       </item>
