@@ -1,0 +1,14 @@
+#include "netthread.h"
+#include <QDebug>
+
+NetThread::NetThread(QObject *parent) :
+    QThread(parent)
+{
+}
+
+
+void NetThread::run()
+{
+    
+    emit finish();
+}

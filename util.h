@@ -6,6 +6,10 @@
 #include <QJsonArray>
 
 class ButtonStruct;
+class QNetworkAccessManager;
+class QNetworkReply;
+
+#define ACCESS_URL "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET"
 
 /*
  * 公共类
@@ -38,7 +42,14 @@ public:
 
     QJsonObject createObject(MyButton *);
 
+    void httpRequest(QString url, QString method, QString outputStr);
+
+    QString getMsg(QString json, QString key);
+
     ~Util();
+
+public slots:
+    void on_httpRequest_slot(QNetworkReply *);
 
 private:
     Util();
@@ -49,6 +60,8 @@ private:
     static Util *instance;         //单例
     ButtonStruct buttons[LENGTH];
     QJsonArray   menuData;         //保存按钮数据
+
+    static QNetworkAccessManager * mNetManager;
 
 };
 

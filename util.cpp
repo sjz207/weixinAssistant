@@ -9,8 +9,13 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include "mybutton.h"
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 
 Util *Util::instance = NULL;
+
+QNetworkAccessManager * Util::mNetManager = NULL;
 
 Util::Util( )
 {
@@ -127,17 +132,26 @@ void Util::getMenu(ButtonStruct *b, MenuLayout *menuLayout)
     //将生成的菜单数据复制到menuLayout里面的变量里面去
     if( !b1 )
     {
+qDebug() << "空指针异常";
         //TODO 文件解析出错，异常处理
-    }
-    for(int i = 0; i < LENGTH; i++)
-    {
-        (b+i)->btn = (b1+i)->btn;
-        for(int j = 0; j< SUB_LENGTH; j++)
+        QFile file("data.json");
+        if( !file.exists())
         {
-            (b+i)->subBtns[j] = (b1+i)->subBtns[j];
+            file.open(QIODevice::WriteOnly);
         }
-        //给每个基类按钮连接信号和槽
-        connect((b+i)->btn, SIGNAL(myCoord(int,int)), menuLayout, SLOT(select_menu_slot(int,int)));
+        file.close();
+    } else
+    {
+        for(int i = 0; i < LENGTH; i++)
+        {
+            (b+i)->btn = (b1+i)->btn;
+            for(int j = 0; j< SUB_LENGTH; j++)
+            {
+                (b+i)->subBtns[j] = (b1+i)->subBtns[j];
+            }
+            //给每个基类按钮连接信号和槽
+            connect((b+i)->btn, SIGNAL(myCoord(int,int)), menuLayout, SLOT(select_menu_slot(int,int)));
+        }
     }
 }
 
@@ -215,7 +229,16 @@ void Util::modifyData(int i, int j, ButtonStruct *b)
         {
             obj = createObject(b[i].btn);
             menuData.insert(i, obj);
+//qDebug()  << "底部没有按钮!";
+        } else
+        {
+            QJsonArray array = obj.take("sub_button").toArray();
+            QJsonObject o;
+            o.insert("name", b[i].btn->getName());
+            o.insert("sub_button", array);
+            menuData.insert(i, o);
         }
+//qDebug() << "修改底部按钮!";
     } else
     {
         if( obj.contains("sub_button"))
@@ -225,6 +248,7 @@ void Util::modifyData(int i, int j, ButtonStruct *b)
              QJsonObject o = createObject(b[i].subBtns[j - 1]);
              array.insert(j - 1, o);
              obj.insert("sub_button", array);
+qDebug() << "sub_button   ......";
         }
         menuData.insert(i, obj);
     }
@@ -236,7 +260,7 @@ void Util::modifyData(int i, int j, ButtonStruct *b)
  */
 void Util::switchComplexButton(int i, int j, ButtonStruct *b)
 {
-qDebug() << "switch complex:" << buttons[i].btn->isComplex();
+//qDebug() << "switch complex:" << buttons[i].btn->isComplex();
     QJsonObject obj = menuData.takeAt(i).toObject();
     QJsonObject newObj;
     newObj.insert("name", b[i].btn->getName());
@@ -312,6 +336,41 @@ void Util::deleteData(int i, int j, ButtonStruct *b)
         menuData.insert(i, obj);
     }
     refreshData();
+}
+
+/*
+ * 构造http请求
+ */
+void Util::httpRequest(QString url, QString method, QString outputStr)
+{
+    if( !mNetManager ) {
+        mNetManager = new QNetworkAccessManager(this);
+    }
+    //构造http请求
+    QNetworkRequest req;
+    QSslConfiguration config;
+    config.setPeerVerifyMode(QSslSocket::VerifyNone);
+    config.setProtocol(QSsl::TlsV1SslV3);
+    req.setSslConfiguration(config);
+    req.setUrl(QUrl(url));
+    QNetworkReply *reply = NULL;
+    if( !method.compare("GET")) {
+        reply = mNetManager->get(req);
+    }
+    if( outputStr != NULL) {
+        //使用utf-8上传post请求数据
+        //如果使用outputStr.toLatin1()的话，那么微信客户端产生的菜单是乱码
+        reply = mNetManager->post(req, outputStr.toUtf8());
+    }
+    connect(mNetManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(on_httpRequest_slot(QNetworkReply*)));
+}
+
+void Util::on_httpRequest_slot(QNetworkReply *reply)
+{
+    QString str(reply->readAll());
+qDebug() << "http request content:" << str;
+    QString error = getMsg(str, "errcode");
+qDebug() << "error :" << error;
 }
 
 /*
@@ -401,6 +460,34 @@ void Util::insertObj(QJsonObject &obj, MyButton *btn)
     {
         obj.insert("key",QString::number(btn->getKey()));
     }
+}
+
+/*
+ * 从给定的json数据当中获取key值的value值
+ */
+QString Util::getMsg(QString json, QString key)
+{
+    QString value;
+    QJsonParseError json_error;
+    QJsonDocument parse_document = QJsonDocument::fromJson(json.toUtf8(), &json_error);
+    if( json_error.error == QJsonParseError::NoError)
+    {
+        if( parse_document.isObject())
+        {
+            QJsonObject obj = parse_document.object();
+            QJsonValue temp = obj.take(key);
+            if( temp.isString() )
+            {
+                value = temp.toString();
+            } else
+            {
+                value = QString::number(temp.toInt());
+            }
+        }
+    }
+
+    return value;
+
 }
 
 /*

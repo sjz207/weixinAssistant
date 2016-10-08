@@ -177,18 +177,23 @@ qDebug() << "子按钮信号和槽添加....";
     //第一次添加按钮
     if( !buttons[i].btn->isComplex() )
     {
+qDebug() << "第一次 btn:" << buttons[i].btn << "i:" << i;
         buttons[i].btn->setComplex(true);
         MyButton *btn = new MyButton;
         btn->setName("子菜单");
         btn->setType("click");
         btn->setKey(99);
+        btn->setCoord(i, 0);
         buttons[i].subBtns[0] = btn;
         btn->setText("子菜单");
         Util::getInstance()->switchComplexButton(i, 0, buttons);
+        //刚创建的菜单连接信号和槽
+        connect(btn, SIGNAL(myCoord(int, int)), this, SLOT(select_menu_slot(int,int)));
         //生成子菜单
         generateSubMenu(i);
     } else
     {
+qDebug() << "不是第一次 btn:" << buttons[i].btn << "i:" << i;
         if( !buttons[i].subBtns[j] )
         {
             buttons[i].subBtns[j] = new MyButton;
@@ -198,7 +203,8 @@ qDebug() << "子按钮信号和槽添加....";
         btn->setType("click");
         btn->setKey(99);
         btn->setText("子菜单");
-//        widget->getMenuContent()->fillDataToButton(buttons[i].subBtns[j]);
+        btn->setCoord(i, j);
+        connect(btn, SIGNAL(myCoord(int, int)), this, SLOT(select_menu_slot(int,int)));
         Util::getInstance()->addData(i, j, buttons);
         generateSubMenu(i);
     }
@@ -218,6 +224,10 @@ void MenuLayout::addBtn_slot()
         return;
     }
     buttons[i].btn = new MyButton(QString("菜单%1").arg(i + 1), i, 0);
+    MyButton *btn = buttons[i].btn;
+    btn->setName(QString("菜单%1").arg(1 + 1));
+    btn->setType("click");
+    btn->setKey(99);
     Util::getInstance()->addData(i, 0, buttons);
     //连接信号和槽
     connect(buttons[i].btn, SIGNAL(myCoord(int,int)), this, SLOT(select_menu_slot(int,int)));
