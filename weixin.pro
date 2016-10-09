@@ -22,7 +22,8 @@ SOURCES +=\
     addsubbutton.cpp \
     main.cpp \
     start.cpp \
-    netthread.cpp
+    netthread.cpp \
+    log.cpp
 
 HEADERS  += widget.h \
     menucontent.h \
@@ -31,7 +32,8 @@ HEADERS  += widget.h \
     util.h \
     addsubbutton.h \
     start.h \
-    netthread.h
+    netthread.h \
+    log.h
 
 FORMS    += widget.ui \
     menucontent.ui \

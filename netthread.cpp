@@ -3,6 +3,7 @@
 #include "util.h"
 #include <QMessageBox>
 #include <QRegularExpression>
+#include "log.h"
 
 const QString NetThread::MenuUrl = "https://api.weixin.qq.com/cgi-bin/menu/create?access_token=ACCESS_TOKEN";
 
@@ -22,22 +23,20 @@ void NetThread::setAccess(QString url)
 void NetThread::on_msg_slot(QString str)
 {
     result = str;
-//qDebug() << "result:" << result;
+Log::log(QString("str:%1").arg(str));
     QString err = Util::getInstance()->getMsg(result, "errcode");
     if( !err.isEmpty() )
     {
-//qDebug() << "err :" << err;
         emit errcode(err);
         return;
     }
     if( result.isEmpty() )
     {
-//qDebug() << "result inner: "<< result;
+Log::log("result is empty!");
         return;
     } else if( !Util::getInstance()->getMsg(result, "access_token").isEmpty())
     {
         QString access = Util::getInstance()->getMsg(result, "access_token");
-//qDebug() << "access :" << access;
         QString url = MenuUrl;
         if( access.isEmpty() )
         {
@@ -55,6 +54,7 @@ void NetThread::run()
 {
 
     Util::getInstance()->httpRequest(accessUrl, "GET", NULL);
+Log::log("netthread run start........");
     //开启事件循环,否则httpRequest函数将无法接收到信号
     exec();
 }

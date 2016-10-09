@@ -12,6 +12,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include "log.h"
 
 Util *Util::instance = NULL;
 
@@ -374,17 +375,15 @@ void Util::httpRequest(QString url, QString method, QString outputStr)
         //如果使用outputStr.toLatin1()的话，那么微信客户端产生的菜单是乱码
         reply = mNetManager->post(req, outputStr.toUtf8());
     }
-qDebug() << "http requst start....";
+//qDebug() << "http requst start....";
     connect(mNetManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(on_httpRequest_slot(QNetworkReply*)));
 }
 
 void Util::on_httpRequest_slot(QNetworkReply *reply)
 {
     QString str(reply->readAll());
-qDebug() << "http request content:" << str;
-//    QString error = getMsg(str, "errcode");
-//qDebug() << "error :" << error;
-
+Log::log(QString("on http request %1").arg(str));
+Log::log(str);
     emit returnMsg(str);
 }
 
