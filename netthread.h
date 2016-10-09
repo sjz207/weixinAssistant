@@ -14,12 +14,23 @@ public:
 
     void run();
 
+    void setAccess(QString url);
+
 signals:
     void finish();
 
     void error();
 
+    void errcode(QString);
+
 public slots:
+    void on_msg_slot(QString);
+
+private:
+    QString accessUrl;
+    QString result;
+
+    const static QString MenuUrl ;
 
 };
 

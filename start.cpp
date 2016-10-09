@@ -81,42 +81,39 @@ void Start::writeConfig()
 
 void Start::on_submitBtn_slot()
 {
-//qDebug() << "widget:" << widget;
-    if( appId.isEmpty() || secret.isEmpty() )
-    {
-        writeConfig();
-    } else
-    {
-        //首先获取access_token
-        QString accessUrl = ACCESS_URL;
-        accessUrl.replace(QRegularExpression("APPID"), appId).replace(QRegularExpression("APPSECRET"), secret);
+    writeConfig();
+    //首先获取access_token
+    QString accessUrl = ACCESS_URL;
+    accessUrl.replace(QRegularExpression("APPID"), appId).replace(QRegularExpression("APPSECRET"), secret);
 //        Util::getInstance()->httpRequest(ACCESS_URL, "GET",  NULL);
-        if( !net )
-        {
-            net = new NetThread;
-            connect(net, SIGNAL(finish()), this, SLOT(on_finish_slot()));
-        }
-        net->start();
-        if( !progDlg )
-        {
-            progDlg = new QProgressDialog;
-            progDlg->setFixedWidth(300);
-            progDlg->setRange(0, 100);
-        }
-        if( progDlg->wasCanceled() )
-        {
-            progDlg->reset();
-        }
-        progDlg->show();
-        if( !timer )
-        {
-            timer = new QTimer;
-            connect(timer, SIGNAL(timeout()), this, SLOT(updateProgress()));
-        }
-        currentValue = 0;
-        progDlg->setValue(currentValue);
-        timer->start(100);
+    if( !net )
+    {
+        net = new NetThread;
+        connect(net, SIGNAL(finish()), this, SLOT(on_finish_slot()));
+        connect(Util::getInstance(), SIGNAL(returnMsg(QString)), net, SLOT(on_msg_slot(QString)));
+        connect(net, SIGNAL(errcode(QString)), this, SLOT(on_errcode_slot(QString)));
     }
+    net->setAccess(accessUrl);
+    net->start();
+    if( !progDlg )
+    {
+        progDlg = new QProgressDialog;
+        progDlg->setFixedWidth(300);
+        progDlg->setRange(0, 100);
+    }
+    if( progDlg->wasCanceled() )
+    {
+        progDlg->reset();
+    }
+    progDlg->show();
+    if( !timer )
+    {
+        timer = new QTimer;
+        connect(timer, SIGNAL(timeout()), this, SLOT(updateProgress()));
+    }
+    currentValue = 0;
+    progDlg->setValue(currentValue);
+    timer->start(100);
 }
 
 void Start::updateProgress()
@@ -133,6 +130,17 @@ void Start::updateProgress()
         progDlg->setHidden(true);
 //        delete progDlg;
 //        progDlg = NULL;
+    }
+}
+
+void Start::on_errcode_slot(QString str)
+{
+    progDlg->cancel();
+    QMessageBox::information(NULL,  tr("提示!"), QString("修改菜单错误码:%1").arg(str));
+    if( !net )
+    {
+        delete net;
+        net = NULL;
     }
 }
 
@@ -157,5 +165,10 @@ Start::~Start()
     {
         delete progDlg;
         progDlg = NULL;
+    }
+    if( !timer )
+    {
+        delete timer;
+        timer = NULL;
     }
 }

@@ -32,6 +32,8 @@ public slots:
 
     void on_finish_slot();
 
+    void on_errcode_slot(QString);
+
 private:
     void init();
 

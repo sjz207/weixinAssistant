@@ -124,6 +124,18 @@ ButtonStruct *Util::getMenuDataFromFile(MenuLayout *layout)
     return buttons;
 }
 
+QString Util::getMenuData()
+{
+    QFile file("data.json");
+    if( !file.open(QIODevice::ReadOnly | QIODevice::Truncate))
+    {
+        //弹框警告
+        QMessageBox::warning(NULL, QString("警告"), QString("文件打开失败"));
+        return NULL;
+    }
+    QString str(file.readAll());
+    return str;
+}
 
 void Util::getMenu(ButtonStruct *b, MenuLayout *menuLayout)
 {
@@ -362,6 +374,7 @@ void Util::httpRequest(QString url, QString method, QString outputStr)
         //如果使用outputStr.toLatin1()的话，那么微信客户端产生的菜单是乱码
         reply = mNetManager->post(req, outputStr.toUtf8());
     }
+qDebug() << "http requst start....";
     connect(mNetManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(on_httpRequest_slot(QNetworkReply*)));
 }
 
@@ -369,8 +382,10 @@ void Util::on_httpRequest_slot(QNetworkReply *reply)
 {
     QString str(reply->readAll());
 qDebug() << "http request content:" << str;
-    QString error = getMsg(str, "errcode");
-qDebug() << "error :" << error;
+//    QString error = getMsg(str, "errcode");
+//qDebug() << "error :" << error;
+
+    emit returnMsg(str);
 }
 
 /*
@@ -475,17 +490,20 @@ QString Util::getMsg(QString json, QString key)
         if( parse_document.isObject())
         {
             QJsonObject obj = parse_document.object();
-            QJsonValue temp = obj.take(key);
-            if( temp.isString() )
+            if( obj.contains(key))
             {
-                value = temp.toString();
-            } else
-            {
-                value = QString::number(temp.toInt());
+                QJsonValue temp = obj.take(key);
+                if( temp.isString() )
+                {
+                    value = temp.toString();
+                } else
+                {
+                    value = QString::number(temp.toInt());
+                }
             }
+
         }
     }
-
     return value;
 
 }

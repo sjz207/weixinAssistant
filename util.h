@@ -46,7 +46,12 @@ public:
 
     QString getMsg(QString json, QString key);
 
+    QString getMenuData();
+
     ~Util();
+
+signals:
+    void returnMsg(QString);
 
 public slots:
     void on_httpRequest_slot(QNetworkReply *);
